@@ -1,0 +1,237 @@
+---
+title: "San Diego Bay satellite telemetry"
+author: "Tomo Eguchi"
+date: '`r format(Sys.time(), "%d %B %Y")`'
+output: word_document
+---
+
+```{r setup, include=FALSE, cache=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list=ls())
+library(RODBC)
+library(dplyr)
+library(readr)
+SE <- function(x) sd(x, na.rm = T)/sqrt(length(na.omit(x)))
+
+# define if ODBC is available
+odbc <- T
+# then set when it was run:
+Run.Date <- Sys.Date()
+begin.date <- '2016-01-01'
+end.date <- Run.Date
+sat.dir <- 'data/batch_Oct/'
+
+if (odbc){
+  # load a couple databases through ODBC
+  turtle <- odbcConnect(dsn = 'Turtle', uid = '', pwd = '')
+  satellite <- odbcConnect(dsn = 'SatelliteTelemetry', uid = '', pwd = '')
+  #LIMS <- odbcConnect(dsn = 'LIMS', uid = '', pwd = '')
+
+  turtle.tbls <- sqlTables(turtle)
+  satellite.tbls <- sqlTables(satellite)
+  #LIMS.tbls <- sqlTables(LIMS)
+
+  # TO FIND ALL TABLE NAMES:
+  turtle.tbls.names <- turtle.tbls$TABLE_NAME[grep(pattern = 'tbl_',
+                                                   turtle.tbls$TABLE_NAME)]
+
+  turtle.vw.names <- turtle.tbls$TABLE_NAME[grep(pattern = 'vw_',
+                                                 turtle.tbls$TABLE_NAME)]
+
+  # LIMS.tbls.names <- LIMS.tbls$TABLE_NAME[grep(pattern = 'tbl_',
+  #                                              LIMS.tbls$TABLE_NAME)]
+  #
+  # LIMS.vw.names <- LIMS.tbls$TABLE_NAME[grep(pattern = 'vw_',
+  #                                            LIMS.tbls$TABLE_NAME)]
+
+  # get SD Bay results:
+  turtle.SDB <- sqlQuery(turtle, 'select * from tbl_SD_Bay')
+  turtle.SDB <- turtle.SDB[, c('NMFS_Tag', 'Turtle_ID', 'Year_caught',
+                               'Month_caught', 'Day_caught', 'Caught_Dead',
+                               'PIT_Tag_LFF', 'PIT_Tag_RFF', 'Inconel_Tag_LFF',
+                               'Inconel_Tag_RFF', 'Sex', 'Weight_kg',
+                               'Str_Carapace_Length_cm', 'Str_Carapace_Width_cm',
+                               'Cur_Carapace_Length_cm', 'Cur_Carapace_Width_cm',
+                               'Sat_Tag_Type', 'Sat_Tag_ID', 'Satellite_Tag_Added')]
+
+  turtle.SDB <- turtle.SDB[!is.na(turtle.SDB$NMFS_Tag),]
+  # haplotypes
+  #haplos.turtles <- sqlQuery(LIMS, 'select * from vw_Sequence_Latest_Run')
+
+  # turtle archive:
+  #turtle.archive.tbl <- sqlQuery(turtle, 'select * from tbl_Turtle_Archive')
+
+  odbcClose(turtle)
+  #odbcClose(LIMS)
+
+  turtle.SDB.sat <- turtle.SDB[!is.na(turtle.SDB$Sat_Tag_ID),]
+
+  turtle.SDB.sat$Date <- as.Date(paste(turtle.SDB.sat$Year_caught,
+                                       turtle.SDB.sat$Month_caught,
+                                       turtle.SDB.sat$Day_caught, sep = '-'),
+                                 format = '%Y-%m-%d')
+
+  save(turtle.SDB.sat,
+       file = paste0('RData/turtle_SDB_satellite_', Sys.Date(), '.RData'))
+
+  # the following needs to be refined to see where all the data reside... 7/17/2017  
+  satellite.data <- sqlQuery(satellite, 'select * from tbl_ARGOS_Download')
+  odbcClose(satellite)
+  
+} else {
+
+  turtle.SDB.sat <- load('RData/turtle_SDB_satellite_', Run.Date, '.RData')
+}
+
+turtle.SDB.sat.filtered <- dplyr::filter(turtle.SDB.sat,
+                                         Date >= as.Date(begin.date) &
+                                           Date <= as.Date(end.date))
+
+turtle.SDB.sat.filtered$Ptt <- as.integer(as.character(turtle.SDB.sat.filtered$Sat_Tag_ID))
+
+# pull out deployment summaries - these are from Wildlife Computers Portal
+# place all folders (one deployment gets a folder) in a directory. Each folder
+# contains an id-Summary.csv file. This section extracts the summary information
+# and put them in a data frame. The directory name should be defined at the 
+# beginning.
+col_def <- cols(DeployID = col_integer(),
+                Ptt = col_integer(),
+                Instr = col_character(),
+                SW = col_character(),
+                PercentDecoded = col_double(),
+                Passes = col_integer(),
+                PercentArgosLoc = col_double(),
+                MsgPerPass = col_integer(),
+                DS = col_integer(),
+                DI = col_integer(),
+                MinPower = col_double(),
+                AvgPower = col_double(),
+                MaxPower = col_double(),
+                MinInterval = col_integer(),
+                EarliestXmitTime = col_datetime('%H:%M:%S %d-%b-%Y'),
+                LatestXmitTime =  col_datetime('%H:%M:%S %d-%b-%Y'),
+                XmitDays = col_integer(),
+                EarliestDataTime =  col_datetime('%H:%M:%S %d-%b-%Y'),
+                LatestDataTime =  col_datetime('%H:%M:%S %d-%b-%Y'),
+                DataDays = col_integer(),
+                ReleaseDate =  col_datetime('%H:%M:%S %d-%b-%Y'),
+                ReleaseType = col_character(),
+                DeployDate =  col_datetime('%H:%M:%S %d-%b-%Y'))
+
+
+dirs <- dir(sat.dir)
+
+#define an empty data frame
+all.data <- data.frame(Ptt = integer(), 
+                       EarliestXmitTime = as.Date(character()), 
+                       LatestXmitTime = as.Date(character()), 
+                       XmitDays = integer(),
+                       EarliestDataTime = as.Date(character()), 
+                       LatestDataTime = as.Date(character()), 
+                       DataDays = integer())
+k<-1
+for (k in 1:length(dirs)){
+  dir.name <- paste0(sat.dir, dirs[k], '/')
+  if (grepl('-', dirs[k])){
+    file.name <- paste0(dir.name, 
+                        strsplit(dirs[k], '-')[[1]][1], '-Summary.csv')
+  } else {
+    file.name <- paste0(dir.name, dirs[k], '-Summary.csv')
+  }
+
+  read_csv(file = file.name,
+           col_types = col_def) %>%
+    dplyr::select(., Ptt, EarliestXmitTime, LatestXmitTime, XmitDays,
+                  EarliestDataTime, LatestDataTime, DataDays) -> temp.data
+  all.data <- rbind(all.data, temp.data)
+}
+
+all.data <- filter(all.data, XmitDays > 0)
+
+all.data.1 <- data.frame(Ptt = integer(), 
+                         EarliestXmitTime = as.POSIXct(character()), 
+                         LatestXmitTime = as.Date(character()), 
+                         XmitDays = integer(),
+                         EarliestDataTime = as.Date(character()), 
+                         LatestDataTime = as.Date(character()), 
+                         DataDays = integer())
+
+# then combine the same PTTs:
+# Dates are finicky to put together. Directly inserting into
+# all.data.1 did not work well - even though columns were
+# defined as dates. One way to get around the problem was to
+# create a new data frame of one entry then rbind. 
+unique.ptt <- unique(all.data$Ptt)
+k <- 1
+for (k in 1:length(unique.ptt)){
+  tmp <- filter(all.data, Ptt == unique.ptt[k])
+  if (nrow(tmp) > 1){
+    tmp <- data.frame(Ptt = unique.ptt[k],
+                      EarliestXmitTime =min(tmp$EarliestXmitTime),
+                      LatestXmitTime = max(tmp$LatestXmitTime),
+                      XmitDays = sum(tmp$XmitDays),
+                      EarliestDataTime = min(tmp$EarliestDataTime),
+                      LatestDataTime = max(tmp$LatestDataTime),
+                      DataDays = sum(tmp$DataDays))
+  }
+  all.data.1 <- rbind(all.data.1, tmp)
+}
+
+# then combine with capture data:
+
+combined.data <- left_join(turtle.SDB.sat.filtered, all.data.1, 
+                           by = c('Ptt'))
+
+write.csv(combined.data, file = 'data/combined_data.csv',
+          row.names = F)
+```
+
+#Introduction
+Even though green turtles (Chelonia mydas) have been reported in San Diego Bay, California, since the mid-1800s, the timing and mechanism of their arrival to this temperate foraging ground are unknown (Stinson 1984).  An ongoing and continuous influx of juvenile turtles in the bay indicates that this area is part of natural range for green turtles in the eastern Pacific.  Monitoring of these green turtles has been conducted since the 1970s (Stinson 1984, Eguchi et al. 2010).  Ongoing genetic studies and satellite telemetry data suggest that this group of turtles is part of the Mexican breeding stocks (East Pacific stock), most likely originating from nesting beaches in the Revillagigedos and Tres Marias Archipelagos in Mexico (Dutton et al. unpublished data, Dutton et al. 2008).  
+Green turtles in San Diego Bay had been associated closely with the effluent of a power plant, which began operation in 1960.  The power plant discharged warm effluent water used for cooling the plant into the southern end of the bay, which created a unique thermal environment in south San Diego Bay.  The consistent pool of warm water (>15°C) created by the power plant effluent attracted the turtles, particularly during the winter when turtles tended to aggregate in the effluent channel as the rest of the Bay cooled to temperatures below optimal limits for green turtles (<15°C ; Felger et al. 1976, McDonald et al. 1994, Moon et al. 1997, Seminoff 2000). This aggregation of green turtles has been consistently monitored since the early 1990s, when it became evident that early neritic-stage juvenile turtles first captured and tagged in 1991 were recaptured in the subsequent years in the southern portion of the bay (Dutton and Dutton 1999, Eguchi et al. 2010). 
+As part of the on-going ecological study of East Pacific green turtles in San Diego Bay, NOAA has been collaborating with Unified Port of San Diego and U.S. Navy to determine movements and habitat use of the turtles. Past studies (funded by the Port) that were conducted prior to the closure of the Chula Vista power plant in 2010 have indicated that green turtles in the bay remain in the southern part of San Diego Bay (MacDonald et al. 2012, MacDonald et al. 2013). Because of the expected changes in the habitat and their effects on the green turtles following the closure of the power plant in 2010, studies on their movements are ongoing. 
+
+#Methods
+Green turtles were caught in the former intake channel of the power plant (Photo 1) with entanglement nets (50-100m length × 8m depth, mesh size = 40 cm stretched; Photo 2). The entanglement nets used in this study have been used to capture the smallest of post-pelagic juvenile turtles at other green turtle foraging areas in Mexico (SCL ≥ 35 cm; Seminoff et al. 2003).  We therefore assumed that all size classes of green turtles living in San Diego Bay would be caught by these nets.  Exact locations of nets were dictated by tidal height, which restricted access to some areas during a low tide.  All nets were deployed from Boston whalers (approximately 3-5 m in length) with a 75-hp or 25-hp outboard motor.  The distance of the nets from the shore ranged from approximately 2 to 100 m, whereas water depths ranged from <1 to 6 m.  The majority of capture attempts were made after 1400hrs, where many turtles were caught during the dusk. 
+
+
+
+Photo 1.  Aerial image of the former South Bay Power Plant region of San Diego Bay. Red Circle indicates area of ongoing capture efforts for green turtles. This is the former intake channel side of the power plant. 
+
+
+Photo 2.  Netting efforts in San Diego Bay aboard NOAA’s 17ft. Boston Whaler, the R/V Green Turtle I.  
+
+Nets were checked for turtles and other species every hour or less.  When a green turtle was caught in a net, it was brought on to the boat, disentangled (Photos 3, 4, and 5), and transported to shore for measuring, weighing, and tagging (Photo 6).  Straight carapace length (SCL) was measured from the nuchal notch to the posterior-most portion of the rear marginal scutes using a forester’s caliper.  Turtles that were caught for the first time were fitted with inconel flipper tags (Style 681, National Brand and Tag Company, Newport, KY, USA) and a passive integrated transponder tag (Avid, Norco, CA, USA), whereas recaptured turtles were identified based on the presence of these uniquely coded tags (Photo 7).  All turtles were released within 6 hrs of capture.  Captured turtles on land were closely monitored for their behavior.  Eyes and carapace were kept moist to avoid overheating.
+
+
+Photo 3.  Green turtle in capture net with NOAA researchers approaching in their Boston Whaler. 
+
+
+Photo 4.  NOAA researchers landing a 300lb. green turtle aboard their research vessel. This turtle had been captured previously as indicated by the satellite tag on its shell. 
+
+Photo 5.  NOAA researchers pulling aboard a green turtle in San Diego Bay. Notice the second turtle in the foreground. 
+
+Photo 6.  Weighing a green turtle as part of NOAA standard data collection.  
+
+
+Photo 7.  Green turtle captured from San Diego Bay. Notice the flipper tag that is used to identify individual turtles.
+
+We retained only high-quality ARGOS locations (error < 1 km, or the location class of 1, 2, or 3) or GPS locations. Data points that landed on land were excluded from further analyses and plotting. We then extracted the best location within each four-hour period for each transmitter; 0000 to 0400, 0400 to 0800, 0800 to 1200, 1200 to 1600, 1600 to 2000, and 2000 to 0000.
+
+
+
+Photo 8. NOAA researcher Dr. Tomo Eguchi applying a satellite transmitter to a large green turtle. Notice the use of a hair-dryer, which expedites the setting process for the attachment epoxy. 
+
+
+Photo 9. Green sea turtle equipped with a satellite transmitter.  Our capture efforts typically occur in the evening and tag attachment is completed after dark. 
+
+
+Photo 10.  NOAA researchers Drs. Jeff Seminoff (foreground) and Tomo Eguchi releasing a green turtle after tag attachment. 
+
+#Results
+During ```r format(strptime(begin.date, '%Y-%m-%d'), '%Y')``` and ```r format(strptime(end.date, '%Y-%m-%d'), '%Y')```, 
+```r length(unique(turtle.SDB.sat.filtered$Sat_Tag_ID))``` green turtles were outfitted with GPS-enabled satellite transmitters (Mk-10, Wildlife Computers). All deployments were made in early summer (May, June, and July). The straight carpace length ranged from ```r min(turtle.SDB.sat.filtered$Str_Carapace_Length_cm, na.rm = T)``` to ```r max(turtle.SDB.sat.filtered$Str_Carapace_Length_cm, na.rm = T)``` cm (mean = ```r formatC(mean(turtle.SDB.sat.filtered$Str_Carapace_Length_cm, na.rm = T), digits = 3)``` and SE = ```r formatC(SE(turtle.SDB.sat.filtered$Str_Carapace_Length_cm), digits = 3)```, whereas the mass ranged from ```r min(turtle.SDB.sat.filtered$Weight_kg, na.rm = T)``` to ```r max(turtle.SDB.sat.filtered$Weight_kg, na.rm = T)``` kg (mean = ```r formatC(mean(turtle.SDB.sat.filtered$Weight_kg, na.rm = T), digits = 3)```, SE = ```r formatC(SE(turtle.SDB.sat.filtered$Weight_kg), digits = 3)```, Table 1). 
+
+Green turtles tend to “clean” their carapace by rubbing it with rocks and other hard structures in the water. Also, there is evidence that other turtles may 'nibble' on antennas. Consequently, satellite tags often are destroyed in this process (Photo 11). This caused short depolyment durations, which ranged from ```r min(combined.data$DataDays, na.rm = T)``` to ```r max(combined.data$DataDays, na.rm = T)``` days (mean = ```r formatC(mean(combined.data$DataDays, na.rm=T), digits = 3)``` and SE = ```r formatC(SE(combined.data$DataDays), digits = 3)```; Table 1). 
+
