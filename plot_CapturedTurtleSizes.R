@@ -15,13 +15,7 @@ library(ggplot2)
 
 save.fig <- F
 
-PITs <- c("152307774A", "132136125A")
-
-
-turtle.haplo.SDB %>% filter(PIT_RFF %in% PITs) -> PIT_RFF
-turtle.haplo.SDB %>% filter(PIT_LFF %in%  PITs) -> PIT_LFF
-
-# select one reading per animal:
+# provide a vector of captured turtle PIT numbers here for plotting later. 
 turtle.haplo.SDB %>%
   mutate(SCL.regress = ifelse(is.na(SCL) & !is.na(CCL), 1, 0),
          CCL.regress = ifelse(is.na(CCL) & !is.na(SCL), 1, 0),
@@ -34,16 +28,29 @@ turtle.haplo.SDB %>%
                          exp(0.96 + 0.04 * SCL),
                          Weight),
          Date = as.Date(paste(Yr, Mo, Da, sep = "-"),
-                        format = '%Y-%m-%d')) %>%
-  group_by(Turtle_ID) -> turtle.size
+                        format = '%Y-%m-%d')) -> turtle.haplo.SDB
+
+turtle.haplo.SDB %>% filter(Date > as.Date("2018-09-30")) -> new.captures
+
+new.captures.PIT.LFF.unique <- na.omit(unique(new.captures$PIT_LFF))
+new.captures.PIT.RFF.unique <- na.omit(unique(new.captures$PIT_RFF))
+
+PITs <- c(as.character(new.captures.PIT.LFF.unique), 
+          as.character(new.captures.PIT.RFF.unique))
+
+turtle.haplo.SDB %>% filter(PIT_RFF %in% PITs) -> PIT_RFF
+turtle.haplo.SDB %>% filter(PIT_LFF %in%  PITs) -> PIT_LFF
+
+# select one reading per animal:
+turtle.haplo.SDB %>% group_by(Turtle_ID)-> turtle.size
 
 turtle.size %>% summarise(max.weight = max(Weight, na.rm = T),
                           max.SCL = max(SCL, na.rm = T),
                           max.CCL = max(CCL, na.rm = T),
                           recent.date = max(Date)) -> turtle.size.max
 
-turtle.size %>% filter(PIT_RFF %in% PITs) -> PIT_RFF
-turtle.size %>% filter(PIT_LFF %in%  PITs) -> PIT_LFF
+# turtle.size %>% filter(PIT_RFF %in% PITs) -> PIT_RFF
+# turtle.size %>% filter(PIT_LFF %in%  PITs) -> PIT_LFF
 new.capture.df <- rbind(PIT_RFF, PIT_LFF) %>% group_by(Turtle_ID)
 
 # ggplot() +
@@ -54,18 +61,18 @@ p.mass <- ggplot() +
   geom_point(data = turtle.size.max,
             aes(x = recent.date,
                 y = max.weight),
-            size = 2) +
+            size = 1) +
   geom_path(data = new.capture.df,
             aes(x = Date, y = Weight,
                 color = NMFS_Tag),
-            size = 3) +
+            size = 1) +
   geom_point(data = new.capture.df,
             aes(x = Date, y = Weight,
                 color = NMFS_Tag),
-            size = 3) +
+            size = 1) +
 
   labs(x = "", y = "Weight (kg)") +
-  theme(#legend.position = "none",
+  theme(legend.position = "none",
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12)) +
   scale_x_date(date_breaks = "5 years", date_labels = "%Y",
@@ -76,17 +83,17 @@ p.SCL <- ggplot() +
   geom_point(data = turtle.size.max,
              aes(x = recent.date,
                  y = max.SCL),
-             size = 2) +
+             size = 1) +
   geom_path(data = new.capture.df,
             aes(x = Date, y = SCL,
                 color = NMFS_Tag),
-            size = 3) +
+            size = 1) +
   geom_point(data = new.capture.df,
              aes(x = Date, y = SCL,
                  color = NMFS_Tag),
-             size = 3) +
+             size = 1) +
   labs(x = "", y = "SCL (cm)") +
-  theme(#legend.position = "none",
+  theme(legend.position = "none",
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12)) +
   scale_x_date(date_breaks = "5 years", date_labels = "%Y",

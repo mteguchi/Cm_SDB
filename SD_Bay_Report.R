@@ -85,7 +85,8 @@ turtle.haplo.SDB <- turtle.haplo.SDB[with(turtle.haplo.SDB,
                                                 Month_caught, Day_caught,
                                                 NMFS_Tag)),] %>%
 
-  transmute(Turtle_ID = Turtle_ID,
+  transmute(NMFS_Tag = NMFS_Tag,
+            Turtle_ID = Turtle_ID,
             PIT_LFF = PIT_Tag_LFF,
             PIT_RFF = PIT_Tag_RFF,
             Tag_LFF = Inconel_Tag_LFF,
@@ -157,10 +158,15 @@ turtle.haplo.SDB <- turtle.haplo.SDB[with(turtle.haplo.SDB,
 # find how many years each turtle was found:
 # define a date column:
 turtle.haplo.SDB %>%
-  mutate(., Date = as.Date(paste(Yr, Mo, Da, sep = "-"),
-                                              format = '%Y-%m-%d')) %>%
-  group_by(Turtle_ID) %>% summarize(firstCapture = first(Date),
-                                    lastCapture = last(Date)) %>%
+  mutate(Date = as.Date(paste(Yr, Mo, Da, sep = "-"),
+                           format = '%Y-%m-%d')) %>%
+  group_by(Turtle_ID) %>% 
+  arrange(Date) %>%
+  summarize(NMFS_Tag = first(NMFS_Tag),
+            firstCapture = first(Date),
+            lastCapture = last(Date),
+            n = n()) %>%
+  arrange(firstCapture) %>%
   mutate(timeBetween = lastCapture - firstCapture) -> captureStats
 
 turtle.haplo.SDB %>% select(-Turtle_ID) -> turtle.report
