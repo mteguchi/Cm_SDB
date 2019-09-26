@@ -32,12 +32,26 @@ turtle.haplo.SDB %>%
 
 turtle.haplo.SDB %>% filter(Date > as.Date("2018-09-30")) -> new.captures
 
+p.mass.all <- ggplot(data = turtle.haplo.SDB) + 
+  geom_histogram(aes(x = Weight))
+
+p.mass.all
+
+p.mass.new <- ggplot(data = new.captures) + 
+  geom_histogram(aes(x = Weight),
+                 binwidth = 12)
+
+p.mass.new
+
+
 new.captures.PIT.LFF.unique <- na.omit(unique(new.captures$PIT_LFF))
 new.captures.PIT.RFF.unique <- na.omit(unique(new.captures$PIT_RFF))
 
 PITs <- c(as.character(new.captures.PIT.LFF.unique), 
           as.character(new.captures.PIT.RFF.unique))
 
+# these are the capture histories of those that were caught during
+# this reporting period
 turtle.haplo.SDB %>% filter(PIT_RFF %in% PITs) -> PIT_RFF
 turtle.haplo.SDB %>% filter(PIT_LFF %in%  PITs) -> PIT_LFF
 
@@ -58,11 +72,13 @@ new.capture.df <- rbind(PIT_RFF, PIT_LFF) %>% group_by(Turtle_ID)
 #                  aes(x = max.weight))
 
 p.mass <- ggplot() +
-  geom_point(data = turtle.size.max,
-            aes(x = recent.date,
-                y = max.weight),
-            size = 1) +
-  geom_path(data = new.capture.df,
+  geom_path(data = turtle.size,
+            aes(x = Date,
+                y = Weight,
+                group = Turtle_ID),
+            size = 1) 
+p.mass
+geom_path(data = new.capture.df,
             aes(x = Date, y = Weight,
                 color = NMFS_Tag),
             size = 1) +
