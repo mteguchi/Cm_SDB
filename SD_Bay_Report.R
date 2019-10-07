@@ -33,14 +33,15 @@ LIMS.vw.names <- LIMS.tbls$TABLE_NAME[grep(pattern = 'vw_',
                                                LIMS.tbls$TABLE_NAME)]
 
 # get SD Bay results:
-turtle.SDB <- sqlQuery(turtle, 'select * from tbl_SD_Bay')
-turtle.SDB <- turtle.SDB[, c('NMFS_Tag', 'Turtle_ID', 'Year_caught',
-                             'Month_caught', 'Day_caught', 'Caught_Dead',
-                             'PIT_Tag_LFF', 'PIT_Tag_RFF', 'Inconel_Tag_LFF',
-                             'Inconel_Tag_RFF', 'Sex', 'Weight_kg',
-                             'Str_Carapace_Length_cm', 'Str_Carapace_Width_cm',
-                             'Cur_Carapace_Length_cm', 'Cur_Carapace_Width_cm',
-                             'Tetracycline_ml', 'Blood_Samples', 'Skin_Samples')]
+turtle.SDB <- sqlQuery(turtle, 'select * from tbl_SD_Bay') %>%
+  select(NMFS_Tag, Turtle_ID, Year_caught,
+         Month_caught, Day_caught, Caught_Dead,
+         PIT_Tag_LFF, PIT_Tag_RFF, Inconel_Tag_LFF,
+         Inconel_Tag_RFF, Sex, Weight_kg,
+         Str_Carapace_Length_cm, Str_Carapace_Width_cm,
+         Cur_Carapace_Length_cm, Cur_Carapace_Width_cm,
+         Tetracycline_ml, Blood_Samples, Skin_Samples) %>%
+  mutate(Date = as.Date(paste0(Year_caught, "-", Month_caught, "-", Day_caught)))
 
 turtle.SDB <- turtle.SDB[!is.na(turtle.SDB$NMFS_Tag),]
 
@@ -63,26 +64,23 @@ odbcClose(LIMS)
 
 # merge by lab_id
 turtle.archive <- left_join(turtle.archive.tbl,
-                            haplos.turtles, by = "Lab_ID")
+                            haplos.turtles, by = "Lab_ID") 
 
-turtle.cm.archive <- turtle.archive %>%
+turtle.archive %>%
   filter(Species_Code == 'CM') %>%
   select(Turtle_ID, Year_collected, Month_collected, Day_collected, Haplotype) %>%
+  na.omit() %>%
   transmute(Turtle_ID = Turtle_ID,
-            Year_caught = Year_collected,
-            Month_caught = Month_collected,
-            Day_caught = Day_collected,
-            Haplotype = Haplotype)
+            Date = as.Date(paste0(Year_collected, "-", Month_collected, "-", Day_collected)),
+            Haplotype = Haplotype) -> turtle.cm.archive
 
 # merge with SD Bay data
 turtle.haplo.SDB <- left_join(turtle.SDB,
                               turtle.cm.archive,
-                              by = c('Turtle_ID', 'Year_caught',
-                                     'Month_caught', 'Day_caught'))
+                              by = c('Turtle_ID', 'Date'))
 
 turtle.haplo.SDB <- turtle.haplo.SDB[with(turtle.haplo.SDB,
-                                          order(Turtle_ID, Year_caught,
-                                                Month_caught, Day_caught,
+                                          order(Turtle_ID, Date,
                                                 NMFS_Tag)),] %>%
 
   transmute(NMFS_Tag = NMFS_Tag,
@@ -91,9 +89,10 @@ turtle.haplo.SDB <- turtle.haplo.SDB[with(turtle.haplo.SDB,
             PIT_RFF = PIT_Tag_RFF,
             Tag_LFF = Inconel_Tag_LFF,
             Tag_RFF = Inconel_Tag_RFF,
-            Yr = Year_caught,
-            Mo = Month_caught,
-            Da = Day_caught,
+            Date = Date,
+            # Yr = Year_caught,
+            # Mo = Month_caught,
+            # Da = Day_caught,
             Dead = Caught_Dead,
             Sex = Sex,
             Weight = Weight_kg,
@@ -158,8 +157,6 @@ turtle.haplo.SDB <- turtle.haplo.SDB[with(turtle.haplo.SDB,
 # find how many years each turtle was found:
 # define a date column:
 turtle.haplo.SDB %>%
-  mutate(Date = as.Date(paste(Yr, Mo, Da, sep = "-"),
-                           format = '%Y-%m-%d')) %>%
   group_by(Turtle_ID) %>% 
   arrange(Date) %>%
   summarize(NMFS_Tag = first(NMFS_Tag),
@@ -169,10 +166,10 @@ turtle.haplo.SDB %>%
   arrange(firstCapture) %>%
   mutate(timeBetween = lastCapture - firstCapture) -> captureStats
 
-turtle.haplo.SDB %>% select(-Turtle_ID) -> turtle.report
+#turtle.haplo.SDB %>% select(-Turtle_ID) -> turtle.report
 
 if (save.files){
-  write.csv(turtle.report,
+  write.csv(turtle.haplo.SDB,
             file = paste0('data/SDB_report_', Sys.Date(), '.csv'),
             quote = F, row.names = F)
 
