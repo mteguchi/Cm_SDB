@@ -43,7 +43,7 @@ turtle.SDB <- sqlQuery(turtle, 'select * from tbl_SD_Bay') %>%
          Tetracycline_ml, Blood_Samples, Skin_Samples) %>%
   mutate(Date = as.Date(paste0(Year_caught, "-", Month_caught, "-", Day_caught)))
 
-turtle.SDB <- turtle.SDB[!is.na(turtle.SDB$NMFS_Tag),]
+#turtle.SDB <- turtle.SDB[!is.na(turtle.SDB$NMFS_Tag),]
 
 # haplotypes - this table is not found ... 9/20/2018
 haplos.turtles <- sqlQuery(LIMS, 'select * from vw_Sequence_Latest_Run')
@@ -80,11 +80,9 @@ turtle.haplo.SDB <- left_join(turtle.SDB,
                               by = c('Turtle_ID', 'Date'))
 
 turtle.haplo.SDB <- turtle.haplo.SDB[with(turtle.haplo.SDB,
-                                          order(Turtle_ID, Date,
-                                                NMFS_Tag)),] %>%
+                                          order(Turtle_ID, Date)),] %>%
 
-  transmute(NMFS_Tag = NMFS_Tag,
-            Turtle_ID = Turtle_ID,
+  transmute(Turtle_ID = Turtle_ID,
             PIT_LFF = PIT_Tag_LFF,
             PIT_RFF = PIT_Tag_RFF,
             Tag_LFF = Inconel_Tag_LFF,
@@ -106,6 +104,7 @@ turtle.haplo.SDB <- turtle.haplo.SDB[with(turtle.haplo.SDB,
             Haplo = Haplotype) %>%
   arrange(PIT_LFF, PIT_RFF)
 
+turtle.haplo.SDB <- turtle.haplo.SDB[!is.na(turtle.haplo.SDB$Turtle_ID),]
   # transmute(NMFS_Tag = NMFS_Tag,
   #           Turtle_ID = Turtle_ID,
   #           Yr = Year_caught,
@@ -159,8 +158,7 @@ turtle.haplo.SDB <- turtle.haplo.SDB[with(turtle.haplo.SDB,
 turtle.haplo.SDB %>%
   group_by(Turtle_ID) %>% 
   arrange(Date) %>%
-  summarize(NMFS_Tag = first(NMFS_Tag),
-            firstCapture = first(Date),
+  summarize(firstCapture = first(Date),
             lastCapture = last(Date),
             n = n()) %>%
   arrange(firstCapture) %>%
