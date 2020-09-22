@@ -9,8 +9,11 @@ rm(list=ls())
 library(RODBC)
 library(dplyr)
 
-save.files <- T
-source("C:/Users/Tomo.Eguchi/Documents/R/tools/TomosFunctions.R")
+save.files <- F
+
+date.begin <- as.Date("2017-05-01")
+date.end <- as.Date("2017-07-15")
+#source("C:/Users/Tomo.Eguchi/Documents/R/tools/TomosFunctions.R")
 
 # load a couple databases through ODBC
 turtle <- odbcConnect(dsn = 'turtle', uid = '', pwd = '')
@@ -40,6 +43,7 @@ turtle.SDB <- sqlQuery(turtle, 'select * from tbl_SD_Bay') %>%
          Inconel_Tag_RFF, Sex, Weight_kg,
          Str_Carapace_Length_cm, Str_Carapace_Width_cm,
          Cur_Carapace_Length_cm, Cur_Carapace_Width_cm,
+         Body_Depth, Tail_Plastron_to_Tip,
          Tetracycline_ml, Blood_Samples, Skin_Samples) %>%
   mutate(Date = as.Date(paste0(Year_caught, "-", Month_caught, "-", Day_caught)))
 
@@ -88,21 +92,20 @@ turtle.haplo.SDB <- turtle.haplo.SDB[with(turtle.haplo.SDB,
             Tag_LFF = Inconel_Tag_LFF,
             Tag_RFF = Inconel_Tag_RFF,
             Date = Date,
-            # Yr = Year_caught,
-            # Mo = Month_caught,
-            # Da = Day_caught,
             Dead = Caught_Dead,
             Sex = Sex,
-            Weight = Weight_kg,
             SCL = Str_Carapace_Length_cm,
             SCW = Str_Carapace_Width_cm,
+            Body_Depth = Body_Depth,
             CCL = Cur_Carapace_Length_cm,
             CCW = Cur_Carapace_Width_cm,
+            Weight = Weight_kg,
             Oxytet = Tetracycline_ml,
             Blood = Blood_Samples,
             Skin = Skin_Samples,
             Haplo = Haplotype) %>%
-  arrange(PIT_LFF, PIT_RFF)
+  filter(Date >= date.begin & Date <= date.end) %>%
+  arrange(Date, Turtle_ID) 
 
 turtle.haplo.SDB <- turtle.haplo.SDB[!is.na(turtle.haplo.SDB$Turtle_ID),]
 
