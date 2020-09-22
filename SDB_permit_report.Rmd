@@ -26,8 +26,8 @@ if (!file.exists(paste0('data/SDB_report_', Sys.Date(), '.csv'))){
   turtle.haplo.SDB <- read.csv(file = paste0('data/SDB_report_', Sys.Date(), '.csv'))
 }
 
-reporting.date.begin <- as.Date("2018-10-01")
-reporting.date.end <- as.Date("2019-09-30")
+reporting.date.begin <- as.Date("2019-10-01")
+reporting.date.end <- as.Date("2020-09-30")
 
 turtle.haplo.SDB %>%
   mutate(SCL.regress = ifelse(is.na(SCL) & !is.na(CCL), 1, 0),
@@ -95,9 +95,10 @@ All statistical analyses were conducted using the R Statistical Language (v.3.6.
 # this file is from Cm_SDB_CMR directory.
 
 # BRING IN SIZE DATA FOR THE SAMPLING. SCL, CCL, ETC.
-# this file was created using extract_data_TurtleDB.R. See the script for 
+# this file was created using extract_data_TurtleDB_2020.R. See the script for 
 # details - connect to the database using ODBC
-dat.size <- read_csv(file = 'data/CMR2019_size_data_2019-09-23.csv')
+dat.size <- read_csv(file = paste0("data/CMR2019_size_data_",
+                                   Sys.Date(), ".csv"))
 
 CH <- select(dat.size, -c("ID", "CCL_cm"))
 
