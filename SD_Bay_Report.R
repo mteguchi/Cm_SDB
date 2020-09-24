@@ -34,7 +34,7 @@ LIMS.vw.names <- LIMS.tbls$TABLE_NAME[grep(pattern = 'vw_',
 
 # get SD Bay results:
 turtle.SDB <- sqlQuery(turtle, 'select * from tbl_SD_Bay') %>%
-  select(NMFS_Tag, Turtle_ID, Year_caught,
+  select(Turtle_ID, Year_caught,
          Month_caught, Day_caught, Caught_Dead,
          PIT_Tag_LFF, PIT_Tag_RFF, Inconel_Tag_LFF,
          Inconel_Tag_RFF, Sex, Weight_kg,
