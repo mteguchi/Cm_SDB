@@ -20,7 +20,7 @@ turtle.vw.names <- turtle.tbls$TABLE_NAME[grep(pattern = 'vw_',
                                                turtle.tbls$TABLE_NAME)]
 
 turtle.SDB <- sqlQuery(turtle, 'select * from tbl_SD_Bay') %>%
-  select('NMFS_Tag', 'Turtle_ID', 'Year_caught',
+  select('Turtle_ID', 'Year_caught',
          'Month_caught', 'Day_caught', 'Caught_Dead',
          'PIT_Tag_LFF', 'PIT_Tag_RFF', 'Inconel_Tag_LFF',
          'Inconel_Tag_RFF', 'Sex', 'Weight_kg',
@@ -75,5 +75,5 @@ dat.01 %>% left_join(first.CCL.CMR, by = "ID") -> CMR_01_size
 #turtle.SDB.CMR[is.na(turtle.SDB.CMR$Turtle_ID), 'Turtle_ID'] <- 999999
 # write_csv in readr is a better choice than write.csv in R base.
 write_csv(CMR_01_size,
-          path = paste0('data/CMR2020_size_data_',
+          path = paste0('data/CMR_size_data_',
                         Sys.Date(), '.csv'))
