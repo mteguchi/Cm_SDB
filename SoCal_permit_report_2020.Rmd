@@ -143,7 +143,7 @@ Under NMFS Scientific Research Permit 18238 during this reporting period, we con
  
 ### San Diego Bay
 #### Summary
-During the permit reporting year, ```r length(unique(new.captures.SDB$Date))``` field operations were conducted in San Diego Bay between ```r min(new.captures.SDB$Date)``` and ```r max(new.captures.SDB$Date)```, during which a total of ```r nrow(new.captures.SDB)``` green turtle interactions occured.  
+During the permit reporting year, one field operation was conducted in San Diego Bay on ```r min(new.captures.SDB$Date)``` and a total of ```r nrow(new.captures.SDB)``` green turtle interactions occured.  
 
 Of the ```r nrow(new.captures.SDB)``` interactions (```r length(unique(new.captures.SDB$Turtle_ID))``` unique turtles), ```r nrow(filter(unique.new.captures.SDB, Sex == "F"))``` were classified as females, ```r nrow(filter(unique.new.captures.SDB, Sex == "M"))``` was classified as a male, and ```r nrow(filter(new.captures.SDB, Sex == "U"))``` were juveniles with unknown sex (Table 1), based upon the mean nesting size of east Pacific green turtles.   Among the ```r length(unique(new.captures.SDB$Turtle_ID))``` unique turtles,  ```r nrow(new.turtles.SDB) ``` were new animals not previously captured (See Table 1 with *).  Long-term recaptures are important indicators that San Diego Bay is a well-established foraging ground for juvenile through adult life stages.  Capturing new juveniles suggests that animals continue to recruit into San Diego Bay.
 
@@ -152,12 +152,11 @@ new.captures.SDB %>% select(Turtle_ID, Date, Sex, Weight, CCL, SCL) %>%
   arrange(by = Date) -> new.captures.SDB.table
 
 knitr::kable(new.captures.SDB.table, digits = 1,
-             caption = paste0("Table 1. Summary of green turtle interactions in San Diego Bay from ", 
-                              min(new.captures.SDB$Date), " to ",  max(new.captures.SDB$Date), "."))
+             caption = paste0("Table 1. Summary of green turtle interactions in San Diego Bay on ", 
+                              min(new.captures.SDB$Date), "."))
 ```
 
-#### Capture-recapture for abundance estimation
-During a portion of this reporting period (2018-10-01 to 2019-09-30), we conducted a short-term intense capture-recapture effort from 2019-05-07 to 2019-06-26 so that we can estimate abundance of green turtles in San Diego Bay assuming no deaths, immigration, and emigration occurred during the period. 
+##### Field sampling
 
 Green turtles were caught with entanglement nets (50-100m length × 8m depth, mesh size = 40 cm stretched).  The entanglement nets used in this study have been used to capture the smallest of post-pelagic juvenile turtles at other green turtle foraging areas in Mexico (SCL ≥ 35 cm; Seminoff et al. 2003) as well as in SDB in the past (SCL ≥ 44.0 cm; Eguchi et al. 2010).  We therefore assumed that all size classes of green turtles living in SDB would be caught by these nets.  Exact locations of nets were dictated by tidal height, which restricted access to some areas during a low tide.  All nets were deployed from Boston whalers (approximately 5 m in length) with a 75-hp or 25-hp outboard motor.  The distance of the nets from the shore ranged from approximately 10 to 100 m, whereas water depths ranged from <1 to 6 m. Deployment time and latitude and longitude coordinates of two ends and the center of each deployed net were determined using a Global Positioning System (GPS) on a mobile phone.  
 
@@ -165,13 +164,11 @@ Capture effort was conducted during late afternoon and evening. Both boats remai
 
 ##### Statistical analyses
 
-All statistical analyses were conducted using the R Statistical Language (v.3.6.1; R core team 2019). The ML analyses were conducted using Mark (available from http://www.phidot.org) through RMark (v. 2.2.6, Laake 2013), whereas the Bayesian analysis was conducted using JAGS (v. 4.3, Plummer 2018) through rjags (v. 4.8, Plummer 2018) in R. 
+All statistical analyses were conducted using the R Statistical Language (```r paste0("v.", version$major, ".", version$minor)```; R core team 2019).  
 
 #### Results 
-##### Field sampling
 
-
-#### Somatic growth
+##### Somatic growth
 Because our capture-recapture effort started in 1990, body size of captured turtles in the reporting period was examined in the context of the entire dataset. Missing CCL (cm) was predicted using the regression equation in Eguchi et al. (2010: CCL = 0.64 + 1.06SCL, n = 211, r^2^ = 0.99). 
 
 Curved carapace lengths of captured turtles during the reporting period ranged from ```r min(unique.new.captures.SDB$CCL, na.rm = T)``` cm to ```r max(unique.new.captures.SDB$CCL, na.rm = T)``` cm (mean = ```r signif(mean(unique.new.captures.SDB$CCL), 3)``` cm, SE = ```r signif(SE(unique.new.captures.SDB$CCL), 2)``` cm, n = ```r nrow(unique.new.captures.SDB)```, Table 1), whereas for the entire dataset, they ranged from ```r signif(min(turtle.haplo.SDB$CCL, na.rm = T), 2)``` cm to ```r signif(max(turtle.haplo.SDB$CCL, na.rm = T), 2)``` (mean = ```r signif(mean(turtle.haplo.SDB$CCL, na.rm = T), 3)``` cm, SE = ```r signif(SE(turtle.haplo.SDB$CCL), 3)``` cm, n = ```r nrow(turtle.haplo.SDB)```). 
@@ -227,14 +224,14 @@ ggplot(data=firstcap_only,
 ### Seal Beach National Wildlife Refuge
 During the reporting period, ```r length(unique(new.captures.SB$Date))``` field outings were made to the SBNWR between ```r min(new.captures.SB$Date)``` and ```r max(new.captures.SB$Date)```. A total of ```r nrow(new.captures.SB)``` green turtles were captured (Table 5). 
 
-Of the ```r nrow(new.captures.SB)``` interactions in the SBNWR with ```r length(unique(new.captures.SB$Turtle_ID))``` unique animals, ```r nrow(filter(unique.new.captures.SB, Sex == "F"))``` was classified as a female and the rest were classified as juveniles with unknown sex (Table 5), based upon the mean nesting size eastern Pacific green turtles.  Of the ```r length(unique(new.captures.SB$Turtle_ID))``` turtles,  ```r nrow(new.turtles.SB)``` were new animals not previously captured (Table 5).  
+Of the ```r nrow(new.captures.SB)``` interactions in the SBNWR with ```r length(unique(new.captures.SB$Turtle_ID))``` unique animals, ```r nrow(filter(unique.new.captures.SB, Sex == "F"))``` was classified as a female and the rest were classified as juveniles with unknown sex (Table 5), based upon the mean nesting size of east Pacific green turtles.  Of the ```r length(unique(new.captures.SB$Turtle_ID))``` turtles,  ```r nrow(new.turtles.SB)``` were new animals not previously captured (Table 5).  
 
 ```{r echo=FALSE}
 new.captures.SB %>% 
   select(Turtle_ID, Date, Sex, Weight, CCL, SCL) %>%
   arrange(by = Date) -> new.captures.SB.table
 knitr::kable(new.captures.SB.table, digits = 1,
-      caption = paste0("Table 5. Summary of green turtle interactions at SBNWR from ", 
+      caption = paste0("Table 2. Summary of green turtle interactions at SBNWR from ", 
                        min(new.captures.SB$Date), " to ",  max(new.captures.SB$Date), "."))
 ```
 
@@ -282,11 +279,7 @@ U.S. Navy is starting a military construction project in Anaheim Bay to restruct
 
 Banerjee SM, Allen CD, Schmitt T, Cheng BS, Seminoff JA, Eguchi T, Komoroske LM (Accepted) Baseline health parameters of east Pacific green turtles at Southern California foraging grounds. Chelonian Conservation and Biology.
 
-Barraza AD, Komoroske LM, Allen C, Eguchi T, Gossett R, Holland E, Lawson DD, LeRoux RA, Long A, Seminoff JA, Lowe CG (2019) Trace metals in green sea turtles (*Chelonia mydas*) inhabiting two southern California coastal estuaries. Chemosphere 223:342-350
-
-Dutton PH, LeRoux RA, LaCasella EL, Seminoff JA, Eguchi T, Dutton DL (2019) Genetic analysis and satellite tracking reveal origin of the green turtles in San Diego Bay. Marine Biology 166:3
-
-Eguchi T, Bredvik J, Graham S, LeRoux R, Saunders B, Seminoff JA (Accepted) Effects of a power plant closure on  home ranges of green turtles in an urban foraging area. Endangered Species Research
+Eguchi T, Bredvik J, Graham S, LeRoux R, Saunders B, Seminoff JA (2020) Effects of a power plant closure on  home ranges of green turtles in an urban foraging area. Endangered Species Research 41:265-277
 
 
 # 2. Summarize how animals reacted to specific procedures. Include normal and abnormal responses of target and non-target animals. Where possible, provide quantitative data and estimate the proportion of animals (%) that had those reactions. 
@@ -312,9 +305,6 @@ No problems were encountered.
 Phone calls were made to U.S. Fish & Wildlife and California Department of Fish and Game Agents 24 hours prior to research outings.  In addition, Navy was notified of the research outings and Navy biologists are often on hand to help during capture efforts. We provide Navy and the Westcoast Region information on green turtle movements and habitat use. 
 
 # Literature Cited:
-BURNHAM KP, ANDERSON DR 1998. Model selection and multimodel inference. Springer-Verlag
-
-COOCH E, WHITE G. Program MARK. Available from http://www.phidot.org  
 
 DUTTON DL, DUTTON PH. 1999. Accelerated growth in San Diego Bay green turtles?  Proceedings of the 17th Annual Symposium on Sea Turtle Biology and Conservation   NOAA Technical Memorandum NMFS-SEFSC-415:164-165.
 
@@ -323,17 +313,6 @@ DUTTON PH, BALAZS GH, LEROUX RA, MURAKAWA SKK, ZARATE P, SARTI-MARTINEZ L. 2008.
 EGUCHI T, SEMINOFF JA, LEROUX RA, DUTTON PH, DUTTON DL. 2010. Abundance and survival rates of green turtles in an urban environment: coexistence of humans and an endangered species. Marine Biology 157:1869-1877.
 
 EGUCHI T, SEMINOFF JA, LEROUX RA, PROSPERI D, DUTTON DL, DUTTON PH. 2012. Morphology and growth rates of the green sea turtle (*Chelonia mydas*) in a northern-most temperate foraging ground. Herpetologica 68:76-87.
-
-GELMAN A, CARLI JB, STERN HS, DUNSON DB, VEHTARI A, RUBIN DB 2014. Bayesian data analysis. CRC Press
-Kéry M, Schaub M. 2012. Bayesian population analysis using WinBUGS. Academic Press
-
-LAAKE JL 2013. RMark: An R Interface for Analysis of Capture-Recapture Data with MARK. AFSC Processed Rep 2013-01, 25p. Alaska Fish. Sci. Cent., NOAA, Natl. Mar. Fish.  Serv., 7600 Sand Point Way NE, Seattle WA 98115.
-
-Plummer M 2016. rjags: Bayesian Graphical Models using MCMC. R package version 4-6. https://CRAN.R-project.org/package=rjags
-
-PLUMMER M 2017 JAGS. Available from http://mcmc-jags.sourceforge.net/ 
-
-ROYLE JA, DORAZIO RM 2008. Hierarchical modeling and inference in ecology. Academic Press
 
 SEMINOFF, J. A. 2000. The biology of the East Pacific green turtle (*Chelonia mydas agassizii*) at a warm temperate foraging area in the Gulf of California, Mexico. Ph. D. Dissertation. University of Arizona, Tucson. 248 pp.
 
